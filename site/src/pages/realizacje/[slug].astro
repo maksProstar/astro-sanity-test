@@ -1,0 +1,133 @@
+---
+import {sanityClient, urlFor} from '../../lib/sanity'
+
+export async function getStaticPaths() {
+  const realizations = await sanityClient.fetch(`
+    *[_type == "realization" && defined(slug.current)]{
+      "slug": slug.current
+    }
+  `)
+
+  return realizations.map((item: any) => ({
+    params: {
+      slug: item.slug,
+    },
+  }))
+}
+
+const {slug} = Astro.params
+
+const realization = await sanityClient.fetch(`
+  *[_type == "realization" && slug.current == $slug][0]{
+    title,
+    category,
+    description,
+    image,
+    "slug": slug.current
+  }
+`, {slug})
+---
+
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{realization.title}</title>
+</head>
+
+<body>
+<main class="page">
+    <section class="hero">
+        <a class="back-link" href="/realizacje/">← Wszystkie realizacje</a>
+
+        <p class="eyebrow">{realization.category}</p>
+        <h1>{realization.title}</h1>
+        <p>{realization.description}</p>
+    </section>
+
+  {realization.image && (
+          <section class="image-section">
+              <img
+                      src={urlFor(realization.image).width(1400).quality(80).auto('format').url()}
+                      alt={realization.title}
+              />
+          </section>
+  )}
+</main>
+</body>
+</html>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family:
+                Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #111;
+        color: #f5f1ea;
+    }
+
+    .page {
+        min-height: 100vh;
+    }
+
+    .hero,
+    .image-section {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding-inline: 24px;
+    }
+
+    .hero {
+        padding-top: 72px;
+        padding-bottom: 48px;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 32px;
+        color: #d8b56d;
+        text-decoration: none;
+    }
+
+    .eyebrow {
+        margin: 0 0 12px;
+        color: #d8b56d;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    h1 {
+        max-width: 860px;
+        margin: 0 0 20px;
+        font-size: clamp(42px, 7vw, 82px);
+        line-height: 0.95;
+    }
+
+    .hero p:last-child {
+        max-width: 720px;
+        color: #c9c1b6;
+        font-size: 18px;
+        line-height: 1.7;
+    }
+
+    .image-section {
+        padding-bottom: 96px;
+    }
+
+    .image-section img {
+        display: block;
+        width: 100%;
+        max-height: 720px;
+        object-fit: cover;
+        border-radius: 28px;
+        border: 1px solid rgba(216, 181, 109, 0.25);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+</style>
